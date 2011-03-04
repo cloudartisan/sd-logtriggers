@@ -1,0 +1,133 @@
+h1. Adds Redis Monitoring to Server Density
+
+h2. Overview
+
+This plugin will watch log files for certain triggers (regular expressions).
+It counts the number of triggers since the last run.  Thresholds are used to
+limit the checks performed.
+
+h2. Examples
+
+h3. Example 1
+
+For example, this shows a check once MODIFICATION_TIME_THRESHOLD seconds have
+passed, where no triggers are found in the log:
+
+<pre>
+    $ python LogTriggers.py 
+    curr_mtime - prev_mtime > MODIFICATION_TIME_THRESHOLD
+    1298615102.58 - 1298611543.64 > 60 == True
+    1298615102.58 - 1298611543.64 = 3558.93702388
+    curr_len - prev_len > MODIFICATION_BYTES_THRESHOLD
+    0 - 1966787 > 1000 == False
+    0 - 1966787 = -1966787
+    {'memcached_down': 0, 'internal_server_error': 0, 'elasticsearch_servers_unavailable': 0, 'job_error': 0}
+</pre>
+
+h3. Example 2
+
+For example, this shows a check where no thresholds have passed so no checks
+are performed on the log:
+
+<pre>
+    $ python LogTriggers.py 
+    curr_mtime - prev_mtime > MODIFICATION_TIME_THRESHOLD
+    1298615102.58 - 1298615882.39 > 60 == False
+    1298615102.58 - 1298615882.39 = -779.814103603
+    curr_len - prev_len > MODIFICATION_BYTES_THRESHOLD
+    0 - 0 > 1000 == False
+    0 - 0 = 0
+    {}
+</pre>
+
+h2. Installation
+
+* Install the plugin in your sd-agent plugins directory
+* Make sure you configure the LOG_TRIGGER_MAP in LogTriggers.py (see the configuration section below)
+* Head to https://youraccount.serverdensity.com/plugins/ and Add new plugin
+* Add a plugin called LogTriggers
+* Edit the LogTriggers plugin and create groups for the graphs (see the configuration section below)
+* Configure your agent so that it knows about plugins http://www.serverdensity.com/docs/agent/plugins/ 
+* Move LogTriggers.py into that directory 
+* Restart the agent (service sd-agent restart)
+
+h2. Configuration
+
+h3. Defining Triggers
+
+It's up to the end user to define their triggers.
+
+Here's an example:
+
+<pre>
+LOG_TRIGGER_MAP = {
+    "/var/log/rails/production.log" : {
+            # Dalli / memcached log messages
+            "dalli_server_down" : re.compile(":11211 is down"),
+            "dalli_server_up" : re.compile(":11211 is back"),
+            "dalli_no_server_error" : re.compile("DalliError: No server available"),
+            "dalli_unexpected_exception" : re.compile("Unexpected exception in Dalli:"),
+            "dalli_value_too_large" : re.compile("DalliError: Value too large"),
+            # Elastic Search
+            "elasticsearch_servers_unavailable" : re.compile("ElasticSearch::NoServersAvailable"),
+            # Miscellaneous Rails
+            "internal_server_error" : re.compile("Internal Server Error"),
+            "job_error" : re.compile("Job Error"),
+            "stale_object_error" : re.compile("ActiveRecord::StaleObjectError"),
+        },
+    "/var/log/cron.log" : {
+            "timeout_error" : re.compile("Timeout::Error"),
+        },
+}
+</pre>
+
+h3. Monitoring Thresholds
+
+There are two thresholds.  Only one has to be satisfied for the
+plugin to perform another check.  If neither threshold is satisfied
+your log will not be checked.
+
+# Modification Time
+# Modification Size
+
+h4. Modification Time
+
+The threshold for modification time is measured in seconds.  If the log
+file has been updated MODIFICATION_TIME_THRESHOLD seconds (or greater)
+since the last check, the plugin will check your logs again.
+
+This allows for rate limiting the checks.  Defaults to 60 seconds.
+The plugin will only check your log again when the log file has
+been modified and was last checked more than 60 seconds ago.
+
+h4. Modification Size
+
+The threshold for modification size is measured in bytes.  If the
+log file has increased by MODIFICATION_BYTES_THRESHOLD bytes (or
+greater) since the last check, we check again.  This allows for
+rate limiting the checks.  Defaults to 1000 bytes.
+
+h3. Defining Server Density Groups
+
+It's up to the end user to create groups that make sense and to select the
+triggers they care most about.  Simply create groups and use your trigger
+names as keys.
+
+To get you started, here are some examples based on the example triggers
+defined above:
+
+<pre>
+  Title: Dalli
+	dalli_server_down
+	dalli_server_up
+</pre>
+
+<pre>
+  Title: ElasticSearch
+	elasticsearch_servers_unavailable
+</pre>
+
+<pre>
+  Title: Miscellaneous
+	timeout_error
+</pre>

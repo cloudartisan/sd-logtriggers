@@ -92,6 +92,7 @@ class LogTriggers:
             if not os.path.isfile(log_file):
                 self.checks_logger.warn("No such file: %s" % log_file)
                 continue
+            self.checks_logger.debug("Checking %s" % log_file)
 
             # Initialise the stats counts
             for trigger_name in triggers.keys():
@@ -130,7 +131,11 @@ class LogTriggers:
                 # Update the stats with counts of each trigger,
                 # then update the previous log file
                 stats.update(self.count_triggers_since_pos(log_file, prev_len, triggers))
+                self.checks_logger.debug("count_triggers_since_pos(\"%s\", %d, %s)" % (log_file, prev_len, triggers))
                 copyfile(log_file, prev_log_file)
+                self.checks_logger.debug("copyfile(\"%s\", \"%s\")" % (log_file, prev_log_file))
+            else:
+                self.checks_logger.debug("nothing to do")
 
         return stats
 

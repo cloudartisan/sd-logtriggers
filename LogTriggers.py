@@ -144,12 +144,17 @@ class LogTriggers:
         return stats
 
     def count_triggers_since_pos(self, log_file, start_pos, triggers):
+        """
+        Jumps to start_pos.  Reads all data from start_pos.  Checks the number
+        of occurrences of each trigger in the data.
+        """
         triggers_count = {}
         f = open(log_file, "r")
-        f.seek(start_pos)
+        f.seek(start_pos, 0)
         data = f.read()
         for name, trigger_re in triggers.items():
             triggers_count[name] = len(trigger_re.findall(data))
+        f.close()
         return triggers_count
 
 

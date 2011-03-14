@@ -94,9 +94,13 @@ class LogTriggers:
                 continue
             self.checks_logger.debug("Checking %s" % log_file)
 
-            # Initialise the stats counts
+            # Initialise the stats counts ONLY if the stat key doesn't already
+            # exist.  This means we can reuse the key across multiple logs,
+            # which can be useful if we want a count of, say, all exceptions
+            # across 10 different logs
             for trigger_name in triggers.keys():
-                stats[trigger_name] = 0
+                if not stats.has_key(trigger_name):
+                    stats[trigger_name] = 0
 
             # Make sure we've primed every log file
             log_file_name = os.path.basename(log_file)

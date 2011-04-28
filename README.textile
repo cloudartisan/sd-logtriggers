@@ -1,4 +1,4 @@
-h1. Adds Redis Monitoring to Server Density
+h1. Log Monitoring for Server Density
 
 h2. Overview
 
